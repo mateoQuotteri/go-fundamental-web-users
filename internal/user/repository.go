@@ -41,7 +41,7 @@ func (r *repo) Create(ctx context.Context, user *domain.User) error {
 
 	//Obtengo la entidad user y le hacemos un append del nuevo user
 	r.db.Users = append(r.db.Users, *user)
-	r.log.Println("User created:", user)
+	r.log.Println("Usuario creado:", user)
 	return nil
 }
 
