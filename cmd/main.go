@@ -21,6 +21,8 @@ func main() {
 	service := user.NewService(repo, logger)
 	ctx := context.Background()
 
+	// Inicializar el servidor HTTP
+
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
 
 	fmt.Println("Hello, World!")

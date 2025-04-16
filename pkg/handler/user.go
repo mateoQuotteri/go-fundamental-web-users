@@ -10,18 +10,36 @@ import (
 	"github.com/mateoQuotteri/go-fundamental-web-users/pkg/transport"
 )
 
+// Esta funcion es la encargada de inicializar el servidor HTTP para el servicio de usuario
+// Recibe un contexto, un router y los endpoints del servicio de usuario
+// y configura el router para manejar las solicitudes HTTP
+// para el servicio de usuario
 func NewUserHTTPServer(ctx context.Context, router *http.ServeMux, endpoints user.Endpoints) {
 	router.HandleFunc("/users", UserServer(ctx, endpoints))
 }
 
+// UserServer es la función que maneja las solicitudes HTTP para el servicio de usuario
+// Recibe un contexto y los endpoints del servicio de usuario
+// y devuelve una función que maneja las solicitudes HTTP
+
 func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// el transport es el encargado de manejar las solicitudes HTTP
+		// y de decodificar y codificar las respuestas
+		// y los errores
 		tran := transport.New(w, r, ctx)
 		switch r.Method {
 		case http.MethodGet:
 			tran.Server(
 				transport.Endpoint(endpoints.GetAll),
 				decodeGetAllUser,
+				encodeResponse,
+				encodeError)
+			return
+		case http.MethodPost:
+			tran.Server(
+				transport.Endpoint(endpoints.Create),
+				decodeCreateUser,
 				encodeResponse,
 				encodeError)
 			return
@@ -33,6 +51,14 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 
 func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
+}
+
+func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req user.CreateReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, fmt.Errorf("invalid request format: %v", err.Error())
+	}
+	return req, nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {

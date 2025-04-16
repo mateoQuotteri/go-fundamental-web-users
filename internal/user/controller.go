@@ -11,6 +11,9 @@ type (
 
 	// Endpoints contiene todos los endpoints del servicio de usuario
 	Endpoints struct {
+
+		//Create y GetAll son funciones que manejan las solicitudes HTTP
+		// y que respetan este patron (linea 10) func(ctx context.Context, request interface{}) (interface{}, error)
 		Create Controller
 		GetAll Controller
 	}
