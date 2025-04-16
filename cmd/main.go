@@ -8,6 +8,7 @@ import (
 
 	"github.com/mateoQuotteri/go-fundamental-web-users/internal/user"
 	"github.com/mateoQuotteri/go-fundamental-web-users/pkg/boostrap"
+	"github.com/mateoQuotteri/go-fundamental-web-users/pkg/handler"
 )
 
 func main() {
@@ -20,7 +21,8 @@ func main() {
 	service := user.NewService(repo, logger)
 	ctx := context.Background()
 
-	server.HandleFunc("/users", user.MakeEndpoints(ctx, service))
+	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
+
 	fmt.Println("Hello, World!")
 
 	log.Fatal(http.ListenAndServe(":8080", server))
