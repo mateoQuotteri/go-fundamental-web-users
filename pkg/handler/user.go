@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/mateoQuotteri/go-fundamental-web-users/internal/user"
@@ -15,40 +16,62 @@ import (
 // y configura el router para manejar las solicitudes HTTP
 // para el servicio de usuario
 func NewUserHTTPServer(ctx context.Context, router *http.ServeMux, endpoints user.Endpoints) {
-	router.HandleFunc("/users", UserServer(ctx, endpoints))
+	router.HandleFunc("/users/", UserServer(ctx, endpoints))
 }
 
 // UserServer es la función que maneja las solicitudes HTTP para el servicio de usuario
 // Recibe un contexto y los endpoints del servicio de usuario
 // y devuelve una función que maneja las solicitudes HTTP
-
 func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.Path
+		log.Printf("Request URL: %s", url)
+		log.Printf("Request Method: %s", r.Method)
+		_, pathSize := transport.Clean(url)
+		log.Printf("Path size: %d", pathSize)
+		if pathSize < 1 || pathSize > 6 {
+			log.Printf("Invalid path size: %d", pathSize)
+			InvalidMethod(w)
+			return
+		}
 		// el transport es el encargado de manejar las solicitudes HTTP
 		// y de decodificar y codificar las respuestas
 		// y los errores
 		tran := transport.New(w, r, ctx)
 		switch r.Method {
 		case http.MethodGet:
-			tran.Server(
-				transport.Endpoint(endpoints.GetAll),
-				decodeGetAllUser,
-				encodeResponse,
-				encodeError)
-			return
+			switch pathSize {
+			case 5:
+				tran.Server(
+					transport.Endpoint(endpoints.GetAll),
+					decodeGetAllUser,
+					encodeResponse,
+					encodeError)
+				return
+				/*case 4:
+					tran.Server(
+						nil,
+						decodeGetUser,
+						encodeResponse,
+						encodeError)
+					return
+				}*/
+			}
 		case http.MethodPost:
-			tran.Server(
-				transport.Endpoint(endpoints.Create),
-				decodeCreateUser,
-				encodeResponse,
-				encodeError)
-			return
+			switch pathSize {
+			case 5:
+				tran.Server(
+					transport.Endpoint(endpoints.Create),
+					decodeCreateUser,
+					encodeResponse,
+					encodeError)
+				return
+			}
 		default:
 			InvalidMethod(w)
 		}
 	}
 }
-
 func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
@@ -61,6 +84,7 @@ func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error)
 	return req, nil
 }
 
+// En handler.go, modifica encodeResponse
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	// Configurar headers antes de escribir el status
 	w.Header().Set("Content-Type", "application/json")
@@ -81,13 +105,10 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 func encodeError(ctx context.Context, w http.ResponseWriter, err error) {
 	// Configurar headers antes de escribir el status
 	w.Header().Set("Content-Type", "application/json")
-
 	status := http.StatusInternalServerError
 	w.WriteHeader(status)
-
 	fmt.Fprintf(w, `{"status": %d, "error": "%s"}`, status, err.Error())
 }
-
 func InvalidMethod(w http.ResponseWriter) {
 	status := http.StatusMethodNotAllowed
 	w.WriteHeader(status)
