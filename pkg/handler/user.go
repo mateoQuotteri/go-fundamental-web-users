@@ -30,11 +30,6 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 		path, pathSize := transport.Clean(url)
 		log.Printf("Path size: %d", pathSize)
 		log.Printf("Path content: %v", path)
-		if pathSize < 1 || pathSize > 6 {
-			log.Printf("Invalid path size: %d", pathSize)
-			InvalidMethod(w)
-			return
-		}
 		params := make(map[string]string)
 		if pathSize == 4 && path[2] != "" {
 			params["userID"] = path[3]
@@ -44,47 +39,48 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 		// y de decodificar y codificar las respuestas
 		// y los errores
 		tran := transport.New(w, r, ctx)
+		var end user.Controller
+		var deco func(ctx context.Context, r *http.Request) (interface{}, error)
 		switch r.Method {
 		case http.MethodGet:
 			switch pathSize {
 			case 5:
-				tran.Server(
-					transport.Endpoint(endpoints.GetAll),
-					decodeGetAllUser,
-					encodeResponse,
-					encodeError)
-				return
+				end = endpoints.GetAll
+				deco = decodeGetAllUser
 			case 4:
-				tran.Server(
-					nil,
-					decodeGetUser,
-					encodeResponse,
-					encodeError)
-				return
+				end = endpoints.GetAll
+				deco = decodeGetUser
 			}
 		case http.MethodPost:
 			switch pathSize {
 			case 5:
-				tran.Server(
-					transport.Endpoint(endpoints.Create),
-					decodeCreateUser,
-					encodeResponse,
-					encodeError)
-				return
+				end = endpoints.Create
+				deco = decodeCreateUser
 			}
-		default:
+		}
+
+		if end != nil && deco != nil {
+			tran.Server(
+				transport.Endpoint(end),
+				deco,
+				encodeResponse,
+				encodeError)
+		} else {
 			InvalidMethod(w)
 		}
 	}
 }
+
 func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	return nil, nil
 }
+
 func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	params := ctx.Value("params").(map[string]string)
 	log.Printf("DEPURACIÓN - Parámetros: %v", params) // Muestra el mapa completo en lugar de solo "params users"
 	return nil, fmt.Errorf("myerror")
 }
+
 func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req user.CreateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,7 +94,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	// Configurar headers antes de escribir el status
 	w.Header().Set("Content-Type", "application/json")
 	// Marshal convierte una entidad a JSON
-	data, err := json.Marshal(response) // Cambiado 'data' por 'response'
+	data, err := json.Marshal(response)
 	if err != nil {
 		return err
 	}
@@ -107,6 +103,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	fmt.Fprintf(w, `{"status": %d, "data": %s}`, status, string(data))
 	return nil
 }
+
 func encodeError(ctx context.Context, w http.ResponseWriter, err error) {
 	// Configurar headers antes de escribir el status
 	w.Header().Set("Content-Type", "application/json")
@@ -114,6 +111,7 @@ func encodeError(ctx context.Context, w http.ResponseWriter, err error) {
 	w.WriteHeader(status)
 	fmt.Fprintf(w, `{"status": %d, "error": "%s"}`, status, err.Error())
 }
+
 func InvalidMethod(w http.ResponseWriter) {
 	status := http.StatusMethodNotAllowed
 	w.WriteHeader(status)
