@@ -48,7 +48,7 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 				end = endpoints.GetAll
 				deco = decodeGetAllUser
 			case 4:
-				end = endpoints.GetAll
+				end = endpoints.Get
 				deco = decodeGetUser
 			}
 		case http.MethodPost:
@@ -77,14 +77,19 @@ func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error)
 
 func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	params := ctx.Value("params").(map[string]string)
-	log.Printf("DEPURACIÓN - Parámetros: %v", params) // Muestra el mapa completo en lugar de solo "params users"
-	return nil, fmt.Errorf("myerror")
-}
+	userID, ok := params["userID"]
+	if !ok {
+		return nil, fmt.Errorf("userID not found in parameters")
+	}
 
+	return user.GetReq{
+		ID: userID,
+	}, nil
+}
 func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req user.CreateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, fmt.Errorf("invalid request format: %v", err.Error())
+		return nil, fmt.Errorf("invalid request formatyttt: %v", err.Error())
 	}
 	return req, nil
 }
