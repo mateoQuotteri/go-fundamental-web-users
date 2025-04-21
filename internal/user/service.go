@@ -12,8 +12,8 @@ type (
 		Create(ctx context.Context, firstName, lastName, email string) (*domain.User, error)
 		GetAll(ctx context.Context) ([]domain.User, error)
 		Get(ctx context.Context, id string) (*domain.User, error)
+		Update(ctx context.Context, id, firstName, lastName, email string) (*domain.User, error) // Nuevo método
 	}
-
 	service struct {
 		log  *log.Logger
 		repo Repository
@@ -56,11 +56,33 @@ func (s *service) GetAll(ctx context.Context) ([]domain.User, error) {
 
 func (s *service) Get(ctx context.Context, id string) (*domain.User, error) {
 	user, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
 
+func (s *service) Update(ctx context.Context, id, firstName, lastName, email string) (*domain.User, error) {
+	// Verificar si el usuario existe
+	_, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	// Crear la estructura de usuario actualizada
+	updatedUser := &domain.User{
+		ID:        id,
+		FirstName: firstName,
+		LastName:  lastName,
+		Email:     email,
+	}
 
+	// Actualizar el usuario en el repositorio
+	err = s.repo.Update(ctx, id, updatedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	s.log.Println("Usuario actualizado:", updatedUser)
+	return updatedUser, nil
 }

@@ -8,7 +8,6 @@ import (
 type (
 	// Controller es una función que procesa una solicitud y devuelve una respuesta o un error
 	Controller func(ctx context.Context, request interface{}) (interface{}, error)
-
 	// Endpoints contiene todos los endpoints del servicio de usuario
 	Endpoints struct {
 		//Create y GetAll son funciones que manejan las solicitudes HTTP
@@ -16,18 +15,24 @@ type (
 		Create Controller
 		GetAll Controller
 		Get    Controller
+		Update Controller // Nuevo endpoint para actualizar usuarios
 	}
-
 	// CreateReq estructura para la solicitud de creación de usuario
 	CreateReq struct {
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
 		Email     string `json:"email"`
 	}
-
 	// GetReq estructura para la solicitud de obtención de usuario
 	GetReq struct {
 		ID string `json:"id"`
+	}
+	// UpdateReq estructura para la solicitud de actualización de usuario
+	UpdateReq struct {
+		ID        string `json:"id"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
 	}
 )
 
@@ -37,6 +42,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 		Create: makeCreateEndpoint(s),
 		GetAll: makeGetAllEndpoint(s),
 		Get:    makeGetEndpoint(s),
+		Update: makeUpdateEndpoint(s), // Añadir este
 	}
 }
 
@@ -90,6 +96,38 @@ func makeGetEndpoint(s Service) Controller {
 		if err != nil {
 			return nil, err
 		}
+		return user, nil
+	}
+}
+
+// makeUpdateEndpoint crea un endpoint para actualizar un usuario por ID
+func makeUpdateEndpoint(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(UpdateReq)
+		if !ok {
+			return nil, fmt.Errorf("invalid request format")
+		}
+
+		// Validaciones
+		if req.ID == "" {
+			return nil, fmt.Errorf("id is required")
+		}
+		if req.FirstName == "" {
+			return nil, fmt.Errorf("first name is required")
+		}
+		if req.LastName == "" {
+			return nil, fmt.Errorf("last name is required")
+		}
+		if req.Email == "" {
+			return nil, fmt.Errorf("email is required")
+		}
+
+		// Actualizar usuario
+		user, err := s.Update(ctx, req.ID, req.FirstName, req.LastName, req.Email)
+		if err != nil {
+			return nil, err
+		}
+
 		return user, nil
 	}
 }

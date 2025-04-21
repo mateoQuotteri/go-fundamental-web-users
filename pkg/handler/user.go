@@ -57,8 +57,13 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 				end = endpoints.Create
 				deco = decodeCreateUser
 			}
+		case http.MethodPut, http.MethodPatch: // Añadir estos métodos para actualización
+			switch pathSize {
+			case 4:
+				end = endpoints.Update
+				deco = decodeUpdateUser
+			}
 		}
-
 		if end != nil && deco != nil {
 			tran.Server(
 				transport.Endpoint(end),
@@ -81,16 +86,35 @@ func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("userID not found in parameters")
 	}
-
 	return user.GetReq{
 		ID: userID,
 	}, nil
 }
+
 func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req user.CreateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, fmt.Errorf("invalid request formatyttt: %v", err.Error())
 	}
+	return req, nil
+}
+
+// Nuevo decodificador para actualizar usuarios
+func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	params := ctx.Value("params").(map[string]string)
+	userID, ok := params["userID"]
+	if !ok {
+		return nil, fmt.Errorf("userID not found in parameters")
+	}
+
+	var req user.UpdateReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, fmt.Errorf("invalid request format: %v", err.Error())
+	}
+
+	// Asegúrate de que el ID del path coincida con el de la solicitud
+	req.ID = userID
+
 	return req, nil
 }
 
