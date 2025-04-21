@@ -12,7 +12,7 @@ type (
 		Create(ctx context.Context, firstName, lastName, email string) (*domain.User, error)
 		GetAll(ctx context.Context) ([]domain.User, error)
 		Get(ctx context.Context, id string) (*domain.User, error)
-		Update(ctx context.Context, id, firstName, lastName, email string) (*domain.User, error) // Nuevo método
+		Update(ctx context.Context, id string, firstName, lastName, email *string) (*domain.User, error) // Fixed method signature
 	}
 	service struct {
 		log  *log.Logger
@@ -28,29 +28,29 @@ func NewService(repo Repository, l *log.Logger) Service {
 }
 
 func (s *service) Create(ctx context.Context, firstName, lastName, email string) (*domain.User, error) {
-	//Creo el nuevo usuario
+	// Creo el nuevo usuario
 	user := &domain.User{
 		FirstName: firstName,
 		LastName:  lastName,
 		Email:     email,
 	}
-	//Guardo el nuevo usuario en la base de datos
-	// pasnadole el conontexto que recibimos desde el servicio y el usuario que generamos
+	// Guardo el nuevo usuario en la base de datos
+	// pasandole el contexto que recibimos desde el servicio y el usuario que generamos
 	err := s.repo.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	s.log.Println("Usuario creadoo:", user)
+	s.log.Println("Usuario creado:", user)
 	return user, nil
 }
 
 func (s *service) GetAll(ctx context.Context) ([]domain.User, error) {
-	//Obtengo todos los usuarios de la base de datos
+	// Obtengo todos los usuarios de la base de datos
 	users, err := s.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	s.log.Println("Usuarios obtenidos:", users)
+	s.log.Println("Usuarios obtenidos:", len(users))
 	return users, nil
 }
 
@@ -62,23 +62,21 @@ func (s *service) Get(ctx context.Context, id string) (*domain.User, error) {
 	return user, nil
 }
 
-func (s *service) Update(ctx context.Context, id, firstName, lastName, email string) (*domain.User, error) {
-	// Verificar si el usuario existe
+func (s *service) Update(ctx context.Context, id string, firstName, lastName, email *string) (*domain.User, error) {
+	// Verificar si el usuario existe antes de intentar actualizarlo
 	_, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Crear la estructura de usuario actualizada
-	updatedUser := &domain.User{
-		ID:        id,
-		FirstName: firstName,
-		LastName:  lastName,
-		Email:     email,
+	// Actualizar el usuario en el repositorio
+	err = s.repo.Update(ctx, id, firstName, lastName, email)
+	if err != nil {
+		return nil, err
 	}
 
-	// Actualizar el usuario en el repositorio
-	err = s.repo.Update(ctx, id, updatedUser)
+	// Obtener el usuario actualizado para devolverlo
+	updatedUser, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}

@@ -7,9 +7,19 @@ import (
 	"github.com/mateoQuotteri/go-responses/response"
 )
 
+// Error definitions
+var (
+//	ErrFirstNameRequired = fmt.Errorf("first name is required")
+//
+// ErrLastNameRequired is imported from errors.go
+//
+//	ErrEmailRequired     = fmt.Errorf("email is required")
+)
+
 type (
 	// Controller es una función que procesa una solicitud y devuelve una respuesta o un error
 	Controller func(ctx context.Context, request interface{}) (interface{}, error)
+
 	// Endpoints contiene todos los endpoints del servicio de usuario
 	Endpoints struct {
 		//Create y GetAll son funciones que manejan las solicitudes HTTP
@@ -19,16 +29,19 @@ type (
 		Get    Controller
 		Update Controller // Nuevo endpoint para actualizar usuarios
 	}
+
 	// CreateReq estructura para la solicitud de creación de usuario
 	CreateReq struct {
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
 		Email     string `json:"email"`
 	}
+
 	// GetReq estructura para la solicitud de obtención de usuario
 	GetReq struct {
 		ID string `json:"id"`
 	}
+
 	// UpdateReq estructura para la solicitud de actualización de usuario
 	UpdateReq struct {
 		ID        string `json:"id"`
@@ -114,18 +127,30 @@ func makeUpdateEndpoint(s Service) Controller {
 		if req.ID == "" {
 			return nil, fmt.Errorf("id is required")
 		}
-		if req.FirstName == "" {
+
+		// Convertir strings a punteros para los campos a actualizar
+		var firstName, lastName, email *string
+
+		if req.FirstName != "" {
+			firstName = &req.FirstName
+		} else {
 			return nil, response.BadRequest(ErrFirstNameRequired.Error())
 		}
-		if req.LastName == "" {
+
+		if req.LastName != "" {
+			lastName = &req.LastName
+		} else {
 			return nil, response.BadRequest(ErrLastNameRequired.Error())
 		}
-		if req.Email == "" {
+
+		if req.Email != "" {
+			email = &req.Email
+		} else {
 			return nil, response.BadRequest(ErrEmailRequired.Error())
 		}
 
-		// Actualizar usuario
-		user, err := s.Update(ctx, req.ID, req.FirstName, req.LastName, req.Email)
+		// Actualizar usuario con los punteros
+		user, err := s.Update(ctx, req.ID, firstName, lastName, email)
 		if err != nil {
 			return nil, err
 		}

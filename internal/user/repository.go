@@ -19,7 +19,7 @@ type (
 		Create(ctx context.Context, user *domain.User) error
 		GetAll(ctx context.Context) ([]domain.User, error)
 		Get(ctx context.Context, id string) (*domain.User, error)
-		Update(ctx context.Context, id string, user *domain.User) error // Nuevo método
+		Update(ctx context.Context, id string, firstName, lastName, email *string) error // Nuevo método
 	}
 	repo struct {
 		db  *sql.DB
@@ -84,33 +84,68 @@ func (r *repo) GetAll(ctx context.Context) ([]domain.User, error) {
 }
 
 func (r *repo) Get(ctx context.Context, id string) (*domain.User, error) {
-	/*index := slices.IndexFunc(r.db.Users, func(v domain.User) bool {
-		return v.ID == id
-	})
-	if index < 0 {
-		return nil, response.NotFound("Usuario no encontrado, lo lamentamos")
+	sqlQ := "SELECT id, first_name, last_name, email FROM users WHERE id = ?"
+	var u domain.User
+	err := r.db.QueryRow(sqlQ, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			r.log.Println("Error al buscar el usuario:", err)
+			return nil, response.NotFound("Usuario no encontrado")
+		}
+		r.log.Println("Error al buscar el usuario:", err)
+		return nil, response.InternalServerError("Error al buscar el usuario")
 	}
-	return &r.db.Users[index], nil*/
 
-	return nil, response.NotFound("Usuario no encontrado, lo lamentamos")
+	r.log.Println("Usuario encontrado:", u)
+
+	return &u, nil
+
 }
 
-func (r *repo) Update(ctx context.Context, id string, user *domain.User) error {
-	// Encontrar el índice del usuario que queremos actualizar
-	/*index := slices.IndexFunc(r.db.Users, func(v domain.User) bool {
-		return v.ID == id
-	})
+func (r *repo) Update(ctx context.Context, id string, firstName, lastName, email *string) error {
+	var fields []string
+	var values []interface{}
 
-	if index < 0 {
-		return &ErrorNotFound{ID: id}
+	if firstName != nil {
+		fields = append(fields, "first_name = ?")
+		values = append(values, *firstName)
+	}
+	if lastName != nil {
+		fields = append(fields, "last_name = ?")
+		values = append(values, *lastName)
+	}
+	if email != nil {
+		fields = append(fields, "email = ?")
+		values = append(values, *email)
 	}
 
-	// Mantener el mismo ID
-	user.ID = id
+	if len(fields) == 0 {
+		return response.BadRequest("No se proporcionaron campos para actualizar")
+	}
 
-	// Actualizar el usuario en la base de datos
-	r.db.Users[index] = *user
+	sqlQ := "UPDATE users SET " + fields[0]
+	for i := 1; i < len(fields); i++ {
+		sqlQ += ", " + fields[i]
+	}
+	sqlQ += " WHERE id = ?"
+	values = append(values, id)
 
-	r.log.Println("Usuario actualizado:", user)*/
+	res, err := r.db.Exec(sqlQ, values...)
+	if err != nil {
+		r.log.Println("Error al actualizar el usuario:", err)
+		return response.InternalServerError("Error al actualizar el usuario")
+	}
+
+	row, errorr := res.RowsAffected()
+	if errorr != nil {
+		r.log.Println("Error al obtener el número de filas afectadas:", errorr)
+		return response.InternalServerError("Error al obtener el número de filas afectadas")
+	}
+
+	if row == 0 {
+		r.log.Println("No se encontraron filas para actualizar")
+		return response.NotFound("No se encontraron filas para actualizar")
+	}
+
 	return nil
 }
