@@ -67,7 +67,7 @@ func (r *repo) Update(ctx context.Context, id string, user *domain.User) error {
 	})
 
 	if index < 0 {
-		return errors.New("usuario no encontrado")
+		return &ErrorNotFound{ID: id}
 	}
 
 	// Mantener el mismo ID
