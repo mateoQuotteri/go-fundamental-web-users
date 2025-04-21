@@ -14,7 +14,18 @@ import (
 func main() {
 	server := http.NewServeMux()
 
-	db := boostrap.NewDB()
+	db, err := boostrap.NewDB()
+
+	if err != nil {
+		log.Fatal("Error al conectar a la base de datos:", err)
+	}
+	defer db.Close()
+
+	errore := db.Ping()
+
+	if errore != nil {
+		log.Fatal("Error al hacer ping a la base de datos:", errore)
+	}
 
 	logger := boostrap.NewLogger()
 	repo := user.NewRepository(db, logger)
