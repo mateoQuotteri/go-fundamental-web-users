@@ -2,11 +2,11 @@ package user
 
 import (
 	"context"
-	"errors"
 	"log"
 	"slices"
 
 	"github.com/mateoQuotteri/go-fundamental-web-users/internal/domain"
+	"github.com/mateoQuotteri/go-responses/response"
 )
 
 type DB struct {
@@ -55,7 +55,7 @@ func (r *repo) Get(ctx context.Context, id string) (*domain.User, error) {
 		return v.ID == id
 	})
 	if index < 0 {
-		return nil, errors.New("usuario no encontrado")
+		return nil, response.NotFound("Usuario no encontrado, lo lamentamos")
 	}
 	return &r.db.Users[index], nil
 }

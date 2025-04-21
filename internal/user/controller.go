@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"fmt"
+
+	"github.com/mateoQuotteri/go-responses/response"
 )
 
 type (
@@ -113,13 +115,13 @@ func makeUpdateEndpoint(s Service) Controller {
 			return nil, fmt.Errorf("id is required")
 		}
 		if req.FirstName == "" {
-			return nil, fmt.Errorf("first name is required")
+			return nil, response.BadRequest(ErrFirstNameRequired.Error())
 		}
 		if req.LastName == "" {
-			return nil, fmt.Errorf("last name is required")
+			return nil, response.BadRequest(ErrLastNameRequired.Error())
 		}
 		if req.Email == "" {
-			return nil, fmt.Errorf("email is required")
+			return nil, response.BadRequest(ErrEmailRequired.Error())
 		}
 
 		// Actualizar usuario

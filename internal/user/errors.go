@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var ErrFirstNameRequired = errors.New("El nombre es requerido")
+var ErrFirstNameRequired = errors.New("El nombre es requerido crack")
 var ErrLastNameRequired = errors.New("El apellido es requerido")
 var ErrEmailRequired = errors.New("El email es requerido")
 
