@@ -35,7 +35,7 @@ func NewRepository(db *sql.DB, l *log.Logger) Repository {
 }
 
 func (r *repo) Create(ctx context.Context, user *domain.User) error {
-	sqlQ := "INSERT INTO users (first_name,last_name, email) VALUES (?, ?, ?, ?)"
+	sqlQ := "INSERT INTO users (first_name,last_name, email) VALUES (?, ?, ?)"
 	res, err := r.db.Exec(sqlQ, user.FirstName, user.LastName, user.Email)
 
 	if err != nil {
