@@ -5,13 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/mateoQuotteri/go-fundamental-web-users/internal/user"
 	"github.com/mateoQuotteri/go-fundamental-web-users/pkg/boostrap"
 	"github.com/mateoQuotteri/go-fundamental-web-users/pkg/handler"
 )
 
 func main() {
+
+	_ = godotenv.Load()
+
 	server := http.NewServeMux()
 
 	db, err := boostrap.NewDB()
@@ -36,7 +41,9 @@ func main() {
 
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
 
+	port := os.Getenv("PORT")
+
 	fmt.Println("Hello, World!")
 
-	log.Fatal(http.ListenAndServe(":8080", server))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), server))
 }
