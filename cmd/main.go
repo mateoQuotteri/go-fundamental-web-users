@@ -39,11 +39,17 @@ func main() {
 
 	// Inicializar el servidor HTTP
 
-	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
+	h := handler.NewUserHTTPServer(user.MakeEndpoints(ctx, service))
 
 	port := os.Getenv("PORT")
 
-	fmt.Println("Hello, World!")
+	addr := fmt.Sprintf("127.0.0.1%s", port)
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), server))
+	fmt.Println("Hello, World!")
+	server := &http.Server{
+		Handler: accesControl(h),
+		addr:    addr,
+	}
+
+	log.Fatal(server.ListenAndServe())
 }
